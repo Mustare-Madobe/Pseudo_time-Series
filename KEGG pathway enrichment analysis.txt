@@ -1,0 +1,40 @@
+# Load necessary libraries
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install(c("clusterProfiler", "org.At.tair.db", "DOSE"))
+
+library(ggplot2)
+library(clusterProfiler)
+library(org.At.tair.db)
+library(DOSE)
+
+# Assuming df is already loaded in the environment
+setwd("C:/Users/HP/Desktop/Pseudo-Time-Series")
+df <- read.csv("arabid.csv")
+
+# Extract gene IDs and expression data
+gene_ids <- df[, 1]
+expression_data <- df[, -1]
+
+# Convert expression data to matrix
+expression_matrix <- as.matrix(expression_data)
+
+# Perform KEGG enrichment analysis
+kegg_enrich <- enrichKEGG(gene = gene_ids, 
+                          organism = 'ath', 
+                          keyType = 'kegg', 
+                          pvalueCutoff = 0.05)
+
+# Extract results
+kegg_results <- as.data.frame(kegg_enrich)
+
+# Plot KEGG pathways
+kegg_plot <- ggplot(kegg_results, aes(x = reorder(Description, -Count), y = Count)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "KEGG Pathway Enrichment", x = "Pathway", y = "Gene Count") +
+  theme_minimal()
+
+# Save the plot as a PNG file
+ggsave("kegg_pathway_enrichment.png", plot = kegg_plot, width = 10, height = 8)
