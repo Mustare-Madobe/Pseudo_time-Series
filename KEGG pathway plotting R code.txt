@@ -1,0 +1,303 @@
+# Load necessary libraries
+library(DESeq2)
+library(dplyr)
+library(pathview)
+library(pheatmap)
+library(org.At.tair.db)
+library(SBGNview)
+
+# Load your data
+setwd("C:/Users/HP/Desktop/Pseudo-Time-Series")
+df <- read.csv("arabid.csv")
+
+# Convert the first column to rownames (assuming first column is Gene ID)
+rownames(df) <- df[,1]
+df <- df[,-1]
+
+# Ensure the count data is integer
+df <- round(df)
+
+# Check the dimensions of the data
+print(dim(df))
+
+# Create a sample metadata dataframe (replace with actual metadata)
+num_samples <- ncol(df)
+colData <- data.frame(
+  condition = factor(rep(c("control", "treatment"), each = num_samples / 2))
+)
+
+# Check the dimensions of the metadata
+print(dim(colData))
+
+# Create DESeq2 dataset
+dds <- DESeqDataSetFromMatrix(
+  countData = as.matrix(df),
+  colData = colData,
+  design = ~ condition
+)
+
+# Run DESeq2 analysis
+dds <- DESeq(dds)
+
+# Extract results with log2 fold change
+res <- results(dds)
+
+# Normalize the expression data
+normalized_counts <- counts(dds, normalized = TRUE)
+
+# Define the genes involved in the gluconeogenesis pathway
+gluconeogenesis_genes <- c(
+  "AT1G01090", "AT1G09780", "AT1G09870", "AT1G12000", "AT1G13440", "AT1G16300", "AT1G20950", "AT1G22170", "AT1G22430", "AT1G22440", "AT1G23190", "AT1G23800", "AT1G24180", "AT1G30120", "AT1G32440", "AT1G32780", "AT1G34430", "AT1G43670", "AT1G44170", "AT1G47840", "AT1G48030", "AT1G50460", "AT1G54100", "AT1G54220", "AT1G56190", "AT1G59900", "AT1G64710", "AT1G70730", "AT1G74030", "AT1G76550", "AT1G77120", "AT1G78050", "AT1G79530", "AT1G79550", "AT2G01140", "AT2G19860", "AT2G21170", "AT2G21330", "AT2G22480", "AT2G24270", "AT2G29560", "AT2G34590", "AT2G36460", "AT2G36530", "AT2G36580", "AT2G37790", "AT3G01260", "AT3G01590", "AT3G04050", "AT3G04120", "AT3G08590", "AT3G12780", "AT3G13930", "AT3G16910", "AT3G16950", "AT3G17240", "AT3G17940", "AT3G20040", "AT3G22960", "AT3G25860", "AT3G25960", "AT3G47800", "AT3G48000", "AT3G49160", "AT3G50520", "AT3G52200", "AT3G52930", "AT3G52990", "AT3G54050", "AT3G55440", "AT3G55650", "AT3G55810", "AT3G61610", "AT4G04040", "AT4G15530", "AT4G16155", "AT4G17260", "AT4G22110", "AT4G23730", "AT4G24620", "AT4G25900", "AT4G26270", "AT4G26390", "AT4G26520", "AT4G26530", "AT4G29130", "AT4G29220", "AT4G32840", "AT4G33070", "AT4G34240", "AT4G36250", "AT4G37840", "AT4G37870", "AT4G38970", "AT5G01320", "AT5G01330", "AT5G01670", "AT5G03690", "AT5G08570", "AT5G14500", "AT5G15140", "AT5G24760", "AT5G36880", "AT5G42250", "AT5G42740", "AT5G43940", "AT5G47810", "AT5G50850", "AT5G51820", "AT5G52920", "AT5G54960", "AT5G56350", "AT5G56630", "AT5G57330", "AT5G61580", "AT5G63680", "AT5G64380", "AT5G65690", "AT5G66530"
+)
+
+# Filter the results for gluconeogenesis genes
+gluconeogenesis_res <- res[rownames(res) %in% gluconeogenesis_genes, ]
+
+# Map TAIR IDs to Entrez IDs
+gene_entrez <- mapIds(org.At.tair.db, keys = rownames(gluconeogenesis_res), column = "ENTREZID", keytype = "TAIR", multiVals = "first")
+
+# Remove genes that could not be mapped
+mapped_genes <- !is.na(gene_entrez)
+gluconeogenesis_res <- gluconeogenesis_res[mapped_genes, ]
+gene_entrez <- gene_entrez[mapped_genes]
+
+# Pathview visualization for gluconeogenesis pathway using Entrez IDs
+pathview(gene.data = setNames(gluconeogenesis_res$log2FoldChange, gene_entrez), 
+         pathway.id = "ath00010", 
+         species = "ath", 
+         gene.idtype = "entrez")
+
+# Heatmap of normalized expression data for gluconeogenesis genes
+gluconeogenesis_counts <- normalized_counts[rownames(normalized_counts) %in% gluconeogenesis_genes, ]
+heatmap <- pheatmap(gluconeogenesis_counts, cluster_rows = TRUE, cluster_cols = TRUE, 
+                    show_rownames = TRUE, show_colnames = TRUE)
+
+#---------------------------------------------------------------------------------------------------------------------#
+
+# Define the genes involved in the starch and sucrose metabolism pathway
+ssmetabolism_genes <- c("AT1G02800", "AT1G02850", "AT1G03310", "AT1G04920", "AT1G05610", "AT1G06020", "AT1G06030", "AT1G06410", "AT1G11720", "AT1G11820", "AT1G12240", "AT1G16980", "AT1G17000", "AT1G22210", "AT1G22880", "AT1G23190", "AT1G23210", "AT1G23870", "AT1G26560", "AT1G27680", "AT1G32900", "AT1G35910", "AT1G45191", "AT1G47840", "AT1G48930", "AT1G50390", "AT1G50460", "AT1G51420", "AT1G55120", "AT1G60090", "AT1G60140", "AT1G60260", "AT1G60270", "AT1G61810", "AT1G61820", "AT1G62660", "AT1G64390", "AT1G65610", "AT1G66250", "AT1G66270", "AT1G66280", "AT1G66430", "AT1G68020", "AT1G69830", "AT1G70290", "AT1G70710", "AT1G70730", "AT1G71380", "AT1G73370", "AT1G76130", "AT1G78090", "AT1G78580", "AT2G01630", "AT2G18700", "AT2G19860", "AT2G21590", "AT2G22190", "AT2G25630", "AT2G31390", "AT2G32290", "AT2G32860", "AT2G35840", "AT2G36190", "AT2G36390", "AT2G39930", "AT2G40840", "AT2G44450", "AT2G44460", "AT2G44470", "AT2G44480", "AT2G44490", "AT2G44540", "AT2G44550", "AT2G44560", "AT2G44570", "AT2G45880", "AT3G01180", "AT3G03250", "AT3G03640", "AT3G09260", "AT3G13560", "AT3G13784", "AT3G13790", "AT3G18070", "AT3G18080", "AT3G20040", "AT3G20440", "AT3G21370", "AT3G23920", "AT3G29320", "AT3G43190", "AT3G43860", "AT3G46970", "AT3G47000", "AT3G47010", "AT3G47040", "AT3G47050", "AT3G52340", "AT3G52600", "AT3G54270", "AT3G59480", "AT3G60120", "AT3G60130", "AT3G60140", "AT3G62740", "AT3G62750", "AT4G00490", "AT4G02280", "AT4G02290", "AT4G09020", "AT4G10120", "AT4G10260", "AT4G11050", "AT4G11980", "AT4G12430", "AT4G15210", "AT4G17090", "AT4G17770", "AT4G18240", "AT4G21760", "AT4G22100", "AT4G22590", "AT4G24040", "AT4G24260", "AT4G24620", "AT4G25000", "AT4G27550", "AT4G27820", "AT4G27830", "AT4G29130", "AT4G29680", "AT4G31140", "AT4G37840", "AT4G38990", "AT4G39000", "AT4G39010", "AT4G39210", "AT4G39770", "AT5G03650", "AT5G04885", "AT5G10100", "AT5G11110", "AT5G11720", "AT5G11920", "AT5G16580", "AT5G17310", "AT5G19220", "AT5G20280", "AT5G20830", "AT5G20940", "AT5G20950", "AT5G24300", "AT5G24540", "AT5G24550", "AT5G28510", "AT5G36890", "AT5G37180", "AT5G42260", "AT5G42740", "AT5G44640", "AT5G45300", "AT5G48300", "AT5G49190", "AT5G49720", "AT5G51460", "AT5G51820", "AT5G51830", "AT5G54570", "AT5G58090", "AT5G64860", "AT5G65140"
+)
+
+# Filter the results for starch and sucrose metabolism genes
+ssmetabolism_res <- res[rownames(res) %in% ssmetabolism_genes, ]
+
+# Map TAIR IDs to Entrez IDs
+gene_entrez <- mapIds(org.At.tair.db, keys = rownames(ssmetabolism_res), column = "ENTREZID", keytype = "TAIR", multiVals = "first")
+
+# Remove genes that could not be mapped
+mapped_genes <- !is.na(gene_entrez)
+ssmetabolism_res <- ssmetabolism_res[mapped_genes, ]
+gene_entrez <- gene_entrez[mapped_genes]
+
+# Pathview visualization for starch and sucrose metabolism pathway using Entrez IDs
+pathview(gene.data = setNames(ssmetabolism_res$log2FoldChange, gene_entrez), 
+         pathway.id = "ath00500", 
+         species = "ath", 
+         gene.idtype = "entrez")
+
+# Heatmap of normalized expression data for starch and sucrose metabolism genes
+ssmetabolism_counts <- normalized_counts[rownames(normalized_counts) %in% ssmetabolism_genes, ]
+heatmap <- pheatmap(ssmetabolism_counts, cluster_rows = TRUE, cluster_cols = TRUE, 
+                    show_rownames = TRUE, show_colnames = FALSE)
+
+##________________________________________________________________________________________________##
+
+
+# Define the genes involved in the Cysteine and methionine metabolism pathway
+cmmetabolism_genes <- c("AT1G01480", "AT1G02500", "AT1G04410", "AT1G05010", "AT1G09240", "AT1G10060", "AT1G10070", "AT1G12010", "AT1G14810", "AT1G16460", "AT1G17745", "AT1G23820", "AT1G31230", "AT1G33320", "AT1G48420", "AT1G49820", "AT1G50090", "AT1G50110", "AT1G53240", "AT1G55880", "AT1G55920", "AT1G56430", "AT1G62380", "AT1G62800", "AT1G64660", "AT1G69770", "AT1G70310", "AT1G77330", "AT1G77670", "AT1G79230", "AT1G80360", "AT1G80740", "AT2G05830", "AT2G17630", "AT2G17640", "AT2G19590", "AT2G22780", "AT2G22810", "AT2G24850", "AT2G26400", "AT2G30970", "AT2G36880", "AT2G38400", "AT2G43750", "AT3G01120", "AT3G02020", "AT3G02470", "AT3G03630", "AT3G03780", "AT3G04940", "AT3G08860", "AT3G13110", "AT3G15020", "AT3G17390", "AT3G19480", "AT3G22460", "AT3G22740", "AT3G23810", "AT3G25570", "AT3G25900", "AT3G26115", "AT3G47520", "AT3G49680", "AT3G49700", "AT3G57050", "AT3G59760", "AT3G61440", "AT3G61510", "AT3G62130", "AT3G63250", "AT4G01850", "AT4G08040", "AT4G08990", "AT4G11280", "AT4G13610", "AT4G13940", "AT4G14140", "AT4G14710", "AT4G14716", "AT4G14880", "AT4G17260", "AT4G19020", "AT4G19710", "AT4G23100", "AT4G23590", "AT4G23600", "AT4G26200", "AT4G28410", "AT4G28420", "AT4G31990", "AT4G34200", "AT4G34840", "AT4G35630", "AT4G35640", "AT4G37770", "AT4G38800", "AT4G39660", "AT5G04950", "AT5G09660", "AT5G11520", "AT5G13280", "AT5G14060", "AT5G15950", "AT5G17920", "AT5G18930", "AT5G19550", "AT5G20980", "AT5G26600", "AT5G27380", "AT5G27650", "AT5G28020", "AT5G28030", "AT5G36160", "AT5G43330", "AT5G43850", "AT5G49160", "AT5G53120", "AT5G53850", "AT5G53970", "AT5G56080", "AT5G56720", "AT5G56760", "AT5G65780", "AT5G65800"
+)
+
+# Filter the results for Cysteine and methionine metabolism genes
+cmmetabolism_res <- res[rownames(res) %in% cmmetabolism_genes, ]
+
+# Map TAIR IDs to Entrez IDs
+gene_entrez <- mapIds(org.At.tair.db, keys = rownames(cmmetabolism_res), column = "ENTREZID", keytype = "TAIR", multiVals = "first")
+
+# Remove genes that could not be mapped
+mapped_genes <- !is.na(gene_entrez)
+cmmetabolism_res <- cmmetabolism_res[mapped_genes, ]
+gene_entrez <- gene_entrez[mapped_genes]
+
+# Pathview visualization for Cysteine and methionine metabolism pathway using Entrez IDs
+pathview(gene.data = setNames(cmmetabolism_res$log2FoldChange, gene_entrez), 
+         pathway.id = "ath00270", 
+         species = "ath", 
+         gene.idtype = "entrez")
+
+# Heatmap of normalized expression data for Cysteine and methionine metabolism genes
+cmmetabolism_counts <- normalized_counts[rownames(normalized_counts) %in% cmmetabolism_genes, ]
+heatmap <- pheatmap(cmmetabolism_counts, cluster_rows = TRUE, cluster_cols = TRUE, 
+                    show_rownames = TRUE, show_colnames = FALSE)
+
+##________________________________________________________________________________________________##
+
+
+# Define the genes involved in the Phenylpropanoid biosynthesis pathway
+phenylpropanoid_genes <- c("AT1G05240", "AT1G05250", "AT1G05260", "AT1G14540", "AT1G14550", "AT1G15950", "AT1G24110", "AT1G24735", "AT1G30760", "AT1G30870", "AT1G34510", "AT1G44970", "AT1G48130", "AT1G49570", "AT1G51680", "AT1G52760", "AT1G62940", "AT1G65060", "AT1G67980", "AT1G67990", "AT1G68850", "AT1G71695", "AT1G72680", "AT1G74540", "AT1G74550", "AT1G77100", "AT1G77420", "AT1G80820", "AT2G18140", "AT2G18150", "AT2G18980", "AT2G19070", "AT2G21730", "AT2G21890", "AT2G22420", "AT2G22990", "AT2G24800", "AT2G30490", "AT2G34060", "AT2G34790", "AT2G35380", "AT2G37040", "AT2G37130", "AT2G38380", "AT2G38390", "AT2G39040", "AT2G39420", "AT2G40890", "AT2G41480", "AT2G43480", "AT2G47630", "AT3G01190", "AT3G03670", "AT3G10340", "AT3G17070", "AT3G19450", "AT3G21230", "AT3G21240", "AT3G21560", "AT3G21770", "AT3G24503", "AT3G28200", "AT3G32980", "AT3G49110", "AT3G49120", "AT3G49960", "AT3G50740", "AT3G50990", "AT3G53260", "AT3G55180", "AT3G62860", "AT4G05160", "AT4G08770", "AT4G08780", "AT4G11290", "AT4G16270", "AT4G17690", "AT4G19010", "AT4G21960", "AT4G25980", "AT4G26010", "AT4G26220", "AT4G30170", "AT4G31760", "AT4G33420", "AT4G33870", "AT4G34050", "AT4G34230", "AT4G36220", "AT4G36430", "AT4G37520", "AT4G37530", "AT4G37970", "AT4G37980", "AT4G37990", "AT4G39330", "AT5G04230", "AT5G04330", "AT5G05340", "AT5G06720", "AT5G06730", "AT5G09640", "AT5G14130", "AT5G15180", "AT5G16120", "AT5G17820", "AT5G19880", "AT5G19890", "AT5G22410", "AT5G24070", "AT5G26310", "AT5G39580", "AT5G40150", "AT5G42180", "AT5G47000", "AT5G48930", "AT5G51890", "AT5G54160", "AT5G57840", "AT5G58390", "AT5G58400", "AT5G63380", "AT5G64100", "AT5G64110", "AT5G64120", "AT5G66390", "AT5G66690", "AT5G67400"
+)
+
+# Filter the results for Phenylpropanoid biosynthesis genes
+phenylpropanoid_res <- res[rownames(res) %in% phenylpropanoid_genes, ]
+
+# Map TAIR IDs to Entrez IDs
+gene_entrez <- mapIds(org.At.tair.db, keys = rownames(phenylpropanoid_res), column = "ENTREZID", keytype = "TAIR", multiVals = "first")
+
+# Remove genes that could not be mapped
+mapped_genes <- !is.na(gene_entrez)
+phenylpropanoid_res <- phenylpropanoid_res[mapped_genes, ]
+gene_entrez <- gene_entrez[mapped_genes]
+
+# Pathview visualization for Phenylpropanoid biosynthesis pathway using Entrez IDs
+pathview(gene.data = setNames(phenylpropanoid_res$log2FoldChange, gene_entrez), 
+         pathway.id = "ath00940", 
+         species = "ath", 
+         gene.idtype = "entrez")
+
+# Heatmap of normalized expression data for Phenylpropanoid biosynthesis genes
+phenylpropanoid_counts <- normalized_counts[rownames(normalized_counts) %in% phenylpropanoid_genes, ]
+heatmap <- pheatmap(phenylpropanoid_counts, cluster_rows = TRUE, cluster_cols = TRUE, 
+                    show_rownames = TRUE, show_colnames = FALSE)
+
+##________________________________________________________________________________________________##
+
+
+# Define the genes involved in the Amino sugar and nucleotide sugar metabolism pathway
+anmetabolism_genes <- c("AT1G01220", "AT1G02000", "AT1G02730", "AT1G05590", "AT1G05610", "AT1G06020", "AT1G06030", "AT1G06780", "AT1G08200", "AT1G12780", "AT1G17890", "AT1G18580", "AT1G23190", "AT1G26570", "AT1G27680", "AT1G30620", "AT1G31070", "AT1G47840", "AT1G50390", "AT1G50460", "AT1G53500", "AT1G56680", "AT1G63000", "AT1G63180", "AT1G64440", "AT1G65590", "AT1G66430", "AT1G67070", "AT1G70730", "AT1G73250", "AT1G74910", "AT1G78570", "AT2G04650", "AT2G19860", "AT2G20810", "AT2G21590", "AT2G27860", "AT2G28760", "AT2G30575", "AT2G31390", "AT2G34850", "AT2G35020", "AT2G38650", "AT2G39770", "AT2G43570", "AT2G43580", "AT2G43590", "AT2G43600", "AT2G43610", "AT2G43620", "AT2G45310", "AT2G45790", "AT2G46480", "AT2G47650", "AT3G01010", "AT3G01640", "AT3G02230", "AT3G02350", "AT3G02570", "AT3G03250", "AT3G06580", "AT3G08900", "AT3G10700", "AT3G10740", "AT3G12500", "AT3G14790", "AT3G19620", "AT3G20040", "AT3G23820", "AT3G24090", "AT3G25140", "AT3G29360", "AT3G42850", "AT3G46440", "AT3G47540", "AT3G51160", "AT3G53520", "AT3G54420", "AT3G55260", "AT3G55590", "AT3G59480", "AT3G61130", "AT3G62830", "AT4G00110", "AT4G10260", "AT4G10960", "AT4G12250", "AT4G16130", "AT4G19720", "AT4G19730", "AT4G19750", "AT4G19760", "AT4G19800", "AT4G19810", "AT4G19820", "AT4G20460", "AT4G23920", "AT4G24620", "AT4G29130", "AT4G30440", "AT4G30570", "AT4G33030", "AT4G37840", "AT4G38270", "AT4G39210", "AT5G09700", "AT5G09730", "AT5G14470", "AT5G15490", "AT5G15650", "AT5G15770", "AT5G16510", "AT5G17310", "AT5G17770", "AT5G18070", "AT5G18200", "AT5G19220", "AT5G20080", "AT5G24090", "AT5G26120", "AT5G28840", "AT5G39320", "AT5G42740", "AT5G44480", "AT5G47780", "AT5G48300", "AT5G50750", "AT5G51820", "AT5G51830", "AT5G52560", "AT5G59290", "AT5G64570", "AT5G66280"
+)
+
+# Filter the results for Amino sugar and nucleotide sugar metabolism genes
+anmetabolism_res <- res[rownames(res) %in% anmetabolism_genes, ]
+
+# Map TAIR IDs to Entrez IDs
+gene_entrez <- mapIds(org.At.tair.db, keys = rownames(anmetabolism_res), column = "ENTREZID", keytype = "TAIR", multiVals = "first")
+
+# Remove genes that could not be mapped
+mapped_genes <- !is.na(gene_entrez)
+anmetabolism_res <- anmetabolism_res[mapped_genes, ]
+gene_entrez <- gene_entrez[mapped_genes]
+
+# Pathview visualization for Amino sugar and nucleotide sugar pathway using Entrez IDs
+pathview(gene.data = setNames(anmetabolism_res$log2FoldChange, gene_entrez), 
+         pathway.id = "ath00520", 
+         species = "ath", 
+         gene.idtype = "entrez")
+
+# Heatmap of normalized expression data for Amino sugar and nucleotide sugar genes
+anmetabolism_counts <- normalized_counts[rownames(normalized_counts) %in% anmetabolism_genes, ]
+heatmap <- pheatmap(anmetabolism_counts, cluster_rows = TRUE, cluster_cols = TRUE, 
+                    show_rownames = TRUE, show_colnames = FALSE)
+##________________________________________________________________________________________________##
+
+
+# Define the genes involved in the MAPK signaling pathway
+signaling_genes <- c("AT1G01360", "AT1G01480", "AT1G04310", "AT1G05100", "AT1G07430", "AT1G09000", "AT1G09090", "AT1G10210", "AT1G10940", "AT1G12280", "AT1G17550", "AT1G18150", "AT1G19230", "AT1G20620", "AT1G20630", "AT1G32640", "AT1G34245", "AT1G43700", "AT1G50060", "AT1G51660", "AT1G54490", "AT1G54960", "AT1G59580", "AT1G60940", "AT1G63440", "AT1G63700", "AT1G64060", "AT1G66340", "AT1G66410", "AT1G72770", "AT1G73000", "AT1G73500", "AT1G73730", "AT1G75830", "AT1G78290", "AT2G14580", "AT2G14610", "AT2G18170", "AT2G19190", "AT2G19990", "AT2G20875", "AT2G23030", "AT2G25490", "AT2G26020", "AT2G26040", "AT2G26070", "AT2G26330", "AT2G27030", "AT2G27050", "AT2G29380", "AT2G30250", "AT2G32510", "AT2G38310", "AT2G38470", "AT2G40330", "AT2G40940", "AT2G41090", "AT2G41110", "AT2G43790", "AT3G04580", "AT3G06030", "AT3G06110", "AT3G11410", "AT3G12500", "AT3G18690", "AT3G19690", "AT3G20770", "AT3G21220", "AT3G23150", "AT3G23240", "AT3G25250", "AT3G26830", "AT3G43810", "AT3G45640", "AT3G50500", "AT3G51040", "AT3G56800", "AT3G59790", "AT3G61510", "AT4G01026", "AT4G01250", "AT4G01370", "AT4G08480", "AT4G08500", "AT4G09320", "AT4G11010", "AT4G11230", "AT4G11280", "AT4G13000", "AT4G17870", "AT4G18620", "AT4G23550", "AT4G23900", "AT4G25090", "AT4G26070", "AT4G26080", "AT4G27920", "AT4G29810", "AT4G33430", "AT4G33520", "AT4G33710", "AT4G33720", "AT4G33730", "AT4G33950", "AT4G35090", "AT4G36450", "AT4G40010", "AT5G03280", "AT5G03730", "AT5G05440", "AT5G07180", "AT5G07390", "AT5G08590", "AT5G10120", "AT5G21120", "AT5G21274", "AT5G21930", "AT5G24770", "AT5G25350", "AT5G37780", "AT5G40440", "AT5G44420", "AT5G44430", "AT5G44790", "AT5G45860", "AT5G45870", "AT5G46330", "AT5G46790", "AT5G47910", "AT5G49480", "AT5G51060", "AT5G51760", "AT5G53160", "AT5G53210", "AT5G57050", "AT5G59220", "AT5G62230", "AT5G63310", "AT5G63650", "AT5G65100", "AT5G66880"
+)
+
+# Filter the results for MAPK signaling genes
+signaling_res <- res[rownames(res) %in% signaling_genes, ]
+
+# Map TAIR IDs to Entrez IDs
+gene_entrez <- mapIds(org.At.tair.db, keys = rownames(signaling_res), column = "ENTREZID", keytype = "TAIR", multiVals = "first")
+
+# Remove genes that could not be mapped
+mapped_genes <- !is.na(gene_entrez)
+signaling_res <- signaling_res[mapped_genes, ]
+gene_entrez <- gene_entrez[mapped_genes]
+
+# Pathview visualization for MAPK signaling pathway using Entrez IDs
+pathview(gene.data = setNames(signaling_res$log2FoldChange, gene_entrez), 
+         pathway.id = "ath04016", 
+         species = "ath", 
+         gene.idtype = "entrez")
+
+# Heatmap of normalized expression data for MAPK signaling genes
+signaling_counts <- normalized_counts[rownames(normalized_counts) %in% signaling_genes, ]
+heatmap <- pheatmap(signaling_counts, cluster_rows = TRUE, cluster_cols = TRUE, 
+                    show_rownames = TRUE, show_colnames = FALSE)
+##________________________________________________________________________________________________##
+
+
+# Define the genes involved in the Carbon metabolism pathway
+carmetabolism_genes <- c("AT1G01090","AT1G04410","AT1G06290","AT1G06310","AT1G06550","AT1G09420","AT1G09780","AT1G11860","AT1G12230","AT1G12550","AT1G12900","AT1G13440","AT1G13700","AT1G16300","AT1G17290","AT1G17650","AT1G17745","AT1G18640","AT1G20620","AT1G20630","AT1G22020","AT1G22170","AT1G22430","AT1G22440","AT1G23310","AT1G24180","AT1G24280","AT1G30120","AT1G32060","AT1G32380","AT1G32440","AT1G32470","AT1G32480","AT1G34430","AT1G36370","AT1G42970","AT1G43670","AT1G47840","AT1G48030","AT1G50460","AT1G50480","AT1G53240","AT1G53310","AT1G54220","AT1G54340","AT1G55880","AT1G55920","AT1G56190","AT1G59900","AT1G62800","AT1G63290","AT1G64190","AT1G65930","AT1G67090","AT1G68010","AT1G68750","AT1G70580","AT1G71100","AT1G72330","AT1G74030","AT1G78050","AT1G79530","AT1G79550","AT1G79750","AT1G79870","AT1G80380","AT2G01140","AT2G01290","AT2G05710","AT2G13360","AT2G13560","AT2G14170","AT2G16790","AT2G17130","AT2G17630","AT2G17640","AT2G18450","AT2G19860","AT2G19900","AT2G20420","AT2G21170","AT2G21330","AT2G22480","AT2G22780","AT2G24270","AT2G26080","AT2G29560","AT2G30650","AT2G30660","AT2G30970","AT2G34590","AT2G35120","AT2G35370","AT2G35390","AT2G35690","AT2G36460","AT2G36530","AT2G36580","AT2G38040","AT2G41530","AT2G42600","AT2G42790","AT2G43750","AT2G44160","AT2G44350","AT2G44530","AT2G45290","AT2G46505","AT2G47510","AT3G01850","AT3G02360","AT3G03910","AT3G04050","AT3G04120","AT3G04790","AT3G04940","AT3G06690","AT3G08590","AT3G09810","AT3G10050","AT3G12780","AT3G13110","AT3G13930","AT3G14130","AT3G14150","AT3G14415","AT3G14420","AT3G14940","AT3G15020","AT3G15290","AT3G16910","AT3G16950","AT3G17240","AT3G19480","AT3G20040","AT3G21720","AT3G22460","AT3G22960","AT3G24360","AT3G25530","AT3G25860","AT3G25960","AT3G26650","AT3G27300","AT3G27380","AT3G47520","AT3G49160","AT3G49360","AT3G50520","AT3G51840","AT3G52200","AT3G52930","AT3G52990","AT3G54050","AT3G55410","AT3G55440","AT3G55650","AT3G55800","AT3G55810","AT3G58740","AT3G58750","AT3G59760","AT3G59970","AT3G60100","AT3G60510","AT3G60750","AT3G61440","AT4G00570"
+                         ,"AT4G13360","AT4G13890","AT4G13930","AT4G14880","AT4G15530","AT4G16155","AT4G16760","AT4G18360","AT4G20930","AT4G22110","AT4G24620","AT4G26270","AT4G26390","AT4G26520","AT4G26530","AT4G26910","AT4G26970","AT4G29130","AT4G29220","AT4G31810","AT4G32210","AT4G32520","AT4G32840","AT4G33010","AT4G34200","AT4G35090","AT4G35260","AT4G35630","AT4G35640","AT4G35650","AT4G35830","AT4G37550","AT4G37560","AT4G37840","AT4G37870","AT4G37930","AT4G38970","AT5G03290","AT5G03690","AT5G03860","AT5G07440","AT5G08300","AT5G08570","AT5G09600","AT5G09660","AT5G11520","AT5G11670","AT5G13110","AT5G13420","AT5G14590","AT5G14780","AT5G15530","AT5G16390","AT5G18170","AT5G19550","AT5G23250","AT5G24400","AT5G24410","AT5G24420","AT5G25880","AT5G26780","AT5G28020","AT5G28030","AT5G35360","AT5G35790","AT5G36700","AT5G36790","AT5G36880","AT5G38410","AT5G38420","AT5G38430","AT5G40650","AT5G40760","AT5G41670","AT5G42250","AT5G42740","AT5G43330","AT5G43940","AT5G44520","AT5G47720","AT5G47760","AT5G47810","AT5G48230","AT5G50850","AT5G50950","AT5G52920","AT5G55070","AT5G56350","AT5G56630","AT5G56720","AT5G56760","AT5G58330","AT5G61410","AT5G61580","AT5G63680","AT5G64380","AT5G65110","AT5G65165","AT5G65690","AT5G65750","AT5G65940","AT5G66760"
+)
+  
+# Filter the results for Carbon metabolism genes
+carmetabolism_res <- res[rownames(res) %in% carmetabolism_genes, ]
+
+# Map TAIR IDs to Entrez IDs
+gene_entrez <- mapIds(org.At.tair.db, keys = rownames(carmetabolism_res), column = "ENTREZID", keytype = "TAIR", multiVals = "first")
+
+# Remove genes that could not be mapped
+mapped_genes <- !is.na(gene_entrez)
+carmetabolism_res <- carmetabolism_res[mapped_genes, ]
+gene_entrez <- gene_entrez[mapped_genes]
+
+# Pathview visualization for Carbon metabolism pathway using Entrez IDs
+pathview(gene.data = setNames(carmetabolism_res$log2FoldChange, gene_entrez), 
+         pathway.id = "ath01200", 
+         species = "ath", 
+         gene.idtype = "entrez")
+
+# Heatmap of normalized expression data for Carbon metabolism genes
+carmetabolism_counts <- normalized_counts[rownames(normalized_counts) %in% carmetabolism_genes, ]
+heatmap <- pheatmap(carmetabolism_counts, cluster_rows = TRUE, cluster_cols = TRUE, 
+                    show_rownames = TRUE, show_colnames = FALSE)
+
+##________________________________________________________________________________________________##
+
+
+# Define the genes involved in the Plant hormone signal transduction pathway
+phstransduction_genes <- c("AT1G13590", "AT1G14920", "AT1G15050", "AT1G15580", "AT1G16510", "AT1G17260", "AT1G17380", "AT1G17550", "AT1G18890", "AT1G19050", "AT1G19180", "AT1G19220", "AT1G19350", "AT1G19830", "AT1G19840", "AT1G19850", "AT1G21430", "AT1G22070", "AT1G23160", "AT1G23320", "AT1G24650", "AT1G27320", "AT1G28130", "AT1G30330", "AT1G32640", "AT1G34170", "AT1G34310", "AT1G34390", "AT1G34410", "AT1G35240", "AT1G35520", "AT1G35540", "AT1G35670", "AT1G45249", "AT1G48470", "AT1G48500", "AT1G48660", "AT1G48670", "AT1G48910", "AT1G49190", "AT1G49580", "AT1G49720", "AT1G50060", "AT1G50700", "AT1G50990", "AT1G51660", "AT1G51950", "AT1G52830", "AT1G56150", "AT1G59500", "AT1G59750", "AT1G59940", "AT1G60940", "AT1G61950", "AT1G63500", "AT1G64280", "AT1G66150", "AT1G66200", "AT1G66340", "AT1G66350", "AT1G66410", "AT1G67710", "AT1G68210", "AT1G68640", "AT1G70560", "AT1G70700", "AT1G72450", "AT1G72770", "AT1G73000", "AT1G73730", "AT1G74740", "AT1G74890", "AT1G74950", "AT1G75080", "AT1G75580", "AT1G75590", "AT1G76040", "AT1G77690", "AT1G77850", "AT1G77920", "AT1G78290", "AT1G79130", "AT1G80100", "AT1G80390", "AT1G80660"
+, "AT2G01200", "AT2G01570", "AT2G01760", "AT2G01820", "AT2G01830", "AT2G02220", "AT2G07560", "AT2G14580", "AT2G14610", "AT2G14960", "AT2G16580", "AT2G17090", "AT2G17290", "AT2G17770", "AT2G17890", "AT2G18010", "AT2G18960", "AT2G19990", "AT2G21050", "AT2G21200", "AT2G21210", "AT2G21220", "AT2G22670", "AT2G22860", "AT2G23030", "AT2G23170", "AT2G24400", "AT2G24520", "AT2G25180", "AT2G25490", "AT2G26040", "AT2G27030", "AT2G27050", "AT2G27070", "AT2G28085", "AT2G28350", "AT2G28830", "AT2G29380", "AT2G30980", "AT2G31500", "AT2G33230", "AT2G33310", "AT2G33860", "AT2G35890", "AT2G36210", "AT2G36270", "AT2G37030", "AT2G38120", "AT2G38310", "AT2G38910", "AT2G39940", "AT2G40330", "AT2G40670", "AT2G40940", "AT2G41070", "AT2G41090", "AT2G41110", "AT2G41140", "AT2G41310", "AT2G41370", "AT2G41860", "AT2G43010", "AT2G43790", "AT2G45210", "AT2G46370", "AT2G46530", "AT2G46690", "AT2G46700", "AT2G46990", "AT2G47750"
+, "AT3G03450", "AT3G03820", "AT3G03830", "AT3G03840", "AT3G03850", "AT3G04580", "AT3G04730", "AT3G05120", "AT3G09870", "AT3G10660", "AT3G11410", "AT3G12250", "AT3G12830", "AT3G15540", "AT3G16360", "AT3G16500", "AT3G16857", "AT3G17600", "AT3G17820", "AT3G17860", "AT3G19100", "AT3G19290", "AT3G19690", "AT3G20220", "AT3G20410", "AT3G20770", "AT3G21220", "AT3G21510", "AT3G23030", "AT3G23050", "AT3G23150", "AT3G23240", "AT3G23750", "AT3G29350", "AT3G42640", "AT3G43120", "AT3G43440", "AT3G43810", "AT3G44460", "AT3G44735", "AT3G45640", "AT3G46510", "AT3G47950", "AT3G48100", "AT3G49370", "AT3G49780", "AT3G50070", "AT3G50500", "AT3G50530", "AT3G50750", "AT3G51200", "AT3G51850", "AT3G53250", "AT3G56380", "AT3G56760", "AT3G56800", "AT3G56850", "AT3G57040", "AT3G57130", "AT3G57530", "AT3G59060", "AT3G59790", "AT3G60330", "AT3G60690", "AT3G61830", "AT3G61900", "AT3G62100", "AT3G62670", "AT3G62980", "AT3G63010"
+, "AT4G00710", "AT4G00880", "AT4G01026", "AT4G02980", "AT4G03400", "AT4G04402", "AT4G04695", "AT4G04700", "AT4G04710", "AT4G04720", "AT4G04740", "AT4G09530", "AT4G09570", "AT4G11730", "AT4G12410", "AT4G13260", "AT4G13790", "AT4G14550", "AT4G14560", "AT4G16110", "AT4G17870", "AT4G18620", "AT4G18710", "AT4G19660", "AT4G21940", "AT4G22620", "AT4G23650", "AT4G23980", "AT4G24210", "AT4G24670", "AT4G26080", "AT4G26120", "AT4G27260", "AT4G27920", "AT4G28640", "AT4G28720", "AT4G29080", "AT4G30080", "AT4G30190", "AT4G30360", "AT4G31320", "AT4G31920", "AT4G32280", "AT4G32540", "AT4G33430", "AT4G33710", "AT4G33720", "AT4G33730", "AT4G33950", "AT4G34000", "AT4G34160", "AT4G34750", "AT4G34760", "AT4G34770", "AT4G34780", "AT4G34790", "AT4G34800", "AT4G34810", "AT4G35230", "AT4G35310", "AT4G35900", "AT4G36070", "AT4G36110", "AT4G36780", "AT4G37390", "AT4G37720", "AT4G38230", "AT4G38825", "AT4G38840", "AT4G38850", "AT4G38860", "AT4G39400", "AT4G40010"
+, "AT5G01240", "AT5G03280", "AT5G03730", "AT5G04870", "AT5G05440", "AT5G06839", "AT5G06950", "AT5G06960", "AT5G07210", "AT5G08590", "AT5G10030", "AT5G10120", "AT5G10990", "AT5G11320", "AT5G12180", "AT5G12480", "AT5G13220", "AT5G13320", "AT5G13350", "AT5G13360", "AT5G13370", "AT5G13380", "AT5G16570", "AT5G17490", "AT5G18010", "AT5G18020", "AT5G18030", "AT5G18050", "AT5G18060", "AT5G18080", "AT5G19360", "AT5G19450", "AT5G20730", "AT5G20810", "AT5G20900", "AT5G21120", "AT5G21274", "AT5G23580", "AT5G24430", "AT5G25350", "AT5G25620", "AT5G25890", "AT5G27320", "AT5G35630", "AT5G35750", "AT5G37020", "AT5G37600", "AT5G37780", "AT5G39340", "AT5G41260", "AT5G42750", "AT5G42910", "AT5G43700", "AT5G43890", "AT5G44080", "AT5G45110", "AT5G45860", "AT5G45870", "AT5G46570", "AT5G46790", "AT5G47220", "AT5G49240", "AT5G49480", "AT5G50760", "AT5G51470", "AT5G51760", "AT5G53160", "AT5G53590", "AT5G53890", "AT5G54510", "AT5G57050", "AT5G57350", "AT5G57560", "AT5G58080", "AT5G59220", "AT5G60450", "AT5G62000", "AT5G62670", "AT5G62920", "AT5G63650", "AT5G65100", "AT5G65210", "AT5G65670", "AT5G65870", "AT5G66210", "AT5G66260", "AT5G66880", "AT5G67260"
+)
+
+# Filter the results for Plant hormone signal transduction genes
+phstransduction_res <- res[rownames(res) %in% phstransduction_genes, ]
+
+# Map TAIR IDs to Entrez IDs
+gene_entrez <- mapIds(org.At.tair.db, keys = rownames(phstransduction_res), column = "ENTREZID", keytype = "TAIR", multiVals = "first")
+
+# Remove genes that could not be mapped
+mapped_genes <- !is.na(gene_entrez)
+phstransduction_res <- phstransduction_res[mapped_genes, ]
+gene_entrez <- gene_entrez[mapped_genes]
+
+# Pathview visualization for Plant hormone signal transduction pathway using Entrez IDs
+pathview(gene.data = setNames(phstransduction_res$log2FoldChange, gene_entrez), 
+         pathway.id = "ath04075", 
+         species = "ath", 
+         gene.idtype = "entrez")
+
+# Heatmap of normalized expression data for Plant hormone signal transduction genes
+phstransduction_counts <- normalized_counts[rownames(normalized_counts) %in% phstransduction_genes, ]
+heatmap <- pheatmap(phstransduction_counts, cluster_rows = TRUE, cluster_cols = TRUE, 
+                    show_rownames = TRUE, show_colnames = TRUE)
+
+#______________________________________________________________________________#
+
+# Define the genes involved in the Organismal Systems pathway
+organismsystem_genes <- c("AT1G01120", "AT1G01340", "AT1G04220", "AT1G05990", "AT1G06700", "AT1G07720", "AT1G09090", "AT1G12220", "AT1G12310", "AT1G15990", "AT1G18210", "AT1G18890", "AT1G19230", "AT1G19440", "AT1G19780", "AT1G21550", "AT1G24620", "AT1G25450", "AT1G32250", "AT1G35670", "AT1G48210", "AT1G49580", "AT1G50060", "AT1G50700", "AT1G51660", "AT1G61950", "AT1G62820", "AT1G64060", "AT1G66400", "AT1G66410", "AT1G68530", "AT1G71160", "AT1G73630", "AT1G74740", "AT1G76040", "AT1G76640", "AT1G76650", "AT1G80460", "AT2G04030", "AT2G04880", "AT2G13790", "AT2G14580", "AT2G14610", "AT2G15090", "AT2G15680", "AT2G16280", "AT2G17290", "AT2G17890", "AT2G19190", "AT2G19990", "AT2G21430", "AT2G23980", "AT2G24610", "AT2G26250", "AT2G26640", "AT2G27030", "AT2G27480", "AT2G28260", "AT2G28630", "AT2G30250", "AT2G30730", "AT2G30740", "AT2G31500", "AT2G35890", "AT2G36180", "AT2G38470", "AT2G38910", "AT2G41090", "AT2G41100", "AT2G41110", "AT2G41140", "AT2G41410", "AT2G41860", "AT2G43230", "AT2G43290", "AT2G43790", "AT2G46430", "AT2G46440", "AT2G46450", "AT2G46700", "AT2G46720", "AT2G47060"
+, "AT3G01830", "AT3G03000", "AT3G03400", "AT3G03410", "AT3G03430", "AT3G07040", "AT3G07490", "AT3G07770", "AT3G10190", "AT3G10280", "AT3G10300", "AT3G10660", "AT3G17410", "AT3G17690", "AT3G17700", "AT3G19100", "AT3G19690", "AT3G20410", "AT3G21220", "AT3G21630", "AT3G22930", "AT3G24110", "AT3G25070", "AT3G25600", "AT3G28910", "AT3G43810", "AT3G45640", "AT3G47450", "AT3G47480", "AT3G48010", "AT3G48080", "AT3G48090", "AT3G49370", "AT3G50360", "AT3G50530", "AT3G50770", "AT3G51850", "AT3G51920", "AT3G52160", "AT3G54940", "AT3G56760", "AT3G56800", "AT3G57530", "AT3G59350", "AT3G59440", "AT3G59790", "AT3G62220", "AT4G01010", "AT4G01250", "AT4G01370", "AT4G02930", "AT4G03290", "AT4G04695", "AT4G04700", "AT4G04710", "AT4G04720", "AT4G04740", "AT4G08500", "AT4G09570", "AT4G11230", "AT4G11260", "AT4G12860", "AT4G14440", "AT4G14640", "AT4G16190", "AT4G20360", "AT4G20780", "AT4G21940", "AT4G23550", "AT4G23570", "AT4G23650", "AT4G24190", "AT4G25090", "AT4G26090"
+, "AT4G26470", "AT4G30360", "AT4G30560", "AT4G33430", "AT4G33710", "AT4G33720", "AT4G33730", "AT4G34250", "AT4G34510", "AT4G34520", "AT4G35310", "AT4G36070", "AT4G37010", "AT4G38230", "AT4G39090", "AT5G04170", "AT5G04530", "AT5G04870", "AT5G07390", "AT5G12180", "AT5G12480", "AT5G13160", "AT5G14870", "AT5G15410", "AT5G17470", "AT5G19360", "AT5G19450", "AT5G20480", "AT5G21274", "AT5G23580", "AT5G24430", "AT5G37770", "AT5G37780", "AT5G42380", "AT5G43760", "AT5G44460", "AT5G45250", "AT5G45260", "AT5G46330", "AT5G47910", "AT5G49070", "AT5G49480", "AT5G51060", "AT5G51700", "AT5G52640", "AT5G53130", "AT5G54250", "AT5G56000", "AT5G56010", "AT5G56030", "AT5G56270", "AT5G56580", "AT5G57940", "AT5G66210"
+)
+
+# Filter the results for Organismal Systems genes
+organismsystem_res <- res[rownames(res) %in% organismsystem_genes, ]
+
+# Map TAIR IDs to Entrez IDs
+gene_entrez <- mapIds(org.At.tair.db, keys = rownames(organismsystem_res), column = "ENTREZID", keytype = "TAIR", multiVals = "first")
+
+# Remove genes that could not be mapped
+mapped_genes <- !is.na(gene_entrez)
+organismsystem_res <- organismsystem_res[mapped_genes, ]
+gene_entrez <- gene_entrez[mapped_genes]
+
+# Pathview visualization for Organismal Systems pathway using Entrez IDs
+pathview(gene.data = setNames(organismsystem_res$log2FoldChange, gene_entrez), 
+         pathway.id = "ath04626", 
+         species = "ath", 
+         gene.idtype = "entrez")
